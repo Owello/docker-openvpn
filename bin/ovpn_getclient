@@ -30,25 +30,8 @@ if [ ! -f "$EASYRSA_PKI/private/${cn}.key" ]; then
 fi
 
 get_client_config() {
-    mode="$1"
     echo "
-client
-nobind
-dev $OVPN_DEVICE
-remote-cert-tls server
-
-remote $OVPN_CN $OVPN_PORT $OVPN_PROTO"
-    if [ "$OVPN_PROTO" == "udp6" ]; then
-        echo "remote $OVPN_CN $OVPN_PORT udp"
-    fi
-    if [ "$OVPN_PROTO" == "tcp6" ]; then
-        echo "remote $OVPN_CN $OVPN_PORT tcp"
-    fi
-    for i in "${OVPN_EXTRA_CLIENT_CONFIG[@]}"; do
-      echo "$i"
-    done
-    if [ "$mode" == "combined" ]; then
-        echo "
+$(cat $OPENVPN/CLIENT.ovpn)
 <key>
 $(cat $EASYRSA_PKI/private/${cn}.key)
 </key>
@@ -58,52 +41,9 @@ $(openssl x509 -in $EASYRSA_PKI/issued/${cn}.crt)
 <ca>
 $(cat $EASYRSA_PKI/ca.crt)
 </ca>
-key-direction 1
 <tls-auth>
 $(cat $EASYRSA_PKI/ta.key)
-</tls-auth>
-"
-    elif [ "$mode" == "separated" ]; then
-        echo "
-key ${cn}.key
-ca ca.crt
-cert ${cn}.crt
-tls-auth ta.key 1
-"
-    fi
-
-    if [ "$OVPN_DEFROUTE" != "0" ];then
-        echo "redirect-gateway def1"
-    fi
-
-    if [ -n "$OVPN_MTU" ]; then
-        echo "tun-mtu $OVPN_MTU"
-    fi
-
-    if [ -n "$OVPN_TLS_CIPHER" ]; then
-        echo "tls-cipher $OVPN_TLS_CIPHER"
-    fi
-
-    if [ -n "$OVPN_CIPHER" ]; then
-        echo "cipher $OVPN_CIPHER"
-    fi
-
-    if [ -n "$OVPN_AUTH" ]; then
-        echo "auth $OVPN_AUTH"
-    fi
-
-    if [ -n "$OVPN_OTP_AUTH" ]; then
-        echo "auth-user-pass"
-        echo "auth-nocache"
-    fi
-
-    if [ "$OVPN_COMP_LZO" == "1" ]; then
-        echo "comp-lzo"
-    fi
-
-    if [ -n "$OVPN_OTP_AUTH" ]; then
-        echo reneg-sec 0
-    fi
+</tls-auth>"
 }
 
 dir="$OPENVPN/clients/$cn"
